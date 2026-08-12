@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>口播影片剪片工作流｜安裝導引｜圭話行銷</title>
+<meta name="description" content="把課程錄影、商品開箱、產品介紹的長錄影，用 AI ＋ ffmpeg 剪成帶字幕、動畫、圖卡、BGM 的短影音與長片。支援 Claude Code、Claude 桌面版、Codex CLI，Windows 與 macOS 皆可跑。免費下載完整工作流與引擎程式。">
+<meta name="author" content="圭話行銷 ATMarketing">
+<meta name="keywords" content="短影音剪輯,課程錄影剪輯,商品開箱影片,AI 剪片,ffmpeg,Claude Code,Codex CLI,逐字稿,自動字幕,Reels,Shorts">
+<link rel="canonical" href="https://atm301.github.io/talking-head-video-cut/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="圭話行銷 ATMarketing">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:title" content="口播影片剪片工作流｜安裝導引">
+<meta property="og:description" content="一段長錄影 → 一批帶字幕、動畫、圖卡、BGM 的短影音與長片。回答三個問題，就給你該下載的檔案、該貼的指令，跟該對 AI 說的第一句話。">
+<meta property="og:url" content="https://atm301.github.io/talking-head-video-cut/">
+<meta property="og:image" content="https://atm301.github.io/talking-head-video-cut/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="口播影片剪片工作流｜安裝導引">
+<meta name="twitter:description" content="一段長錄影 → 一批帶字幕、動畫、圖卡、BGM 的短影音與長片。免費下載完整工作流與引擎程式。">
+<meta name="twitter:image" content="https://atm301.github.io/talking-head-video-cut/og.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b1416'/%3E%3Cpath d='M22 18l24 14-24 14z' fill='%2314c8be'/%3E%3C/svg%3E">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"HowTo",
+ "name":"口播影片剪片工作流 安裝導引",
+ "description":"把長錄影剪成帶字幕、動畫、圖卡、BGM 的短影音與長片的完整安裝與操作流程。",
+ "inLanguage":"zh-Hant",
+ "author":{"@type":"Organization","name":"圭話行銷 ATMarketing","url":"https://atmarketing.tw/"},
+ "step":[
+  {"@type":"HowToStep","name":"選路線","text":"決定用 Claude 桌面版、Claude Code、Codex CLI 還是網頁版對話。"},
+  {"@type":"HowToStep","name":"裝環境","text":"安裝 Python、ffmpeg（需含 libass）、faster-whisper 等套件。"},
+  {"@type":"HowToStep","name":"放檔案","text":"引擎解壓到專案資料夾，並把 skill 註冊到對應的資料夾。"},
+  {"@type":"HowToStep","name":"填 paths.py","text":"設定專案路徑、字型、BGM、來源錄影與畫面幾何。"},
+  {"@type":"HowToStep","name":"交給 AI","text":"貼上啟動指令，讓 AI 做環境判別、轉逐字稿與內容盤點。"},
+  {"@type":"HowToStep","name":"算圖與驗收","text":"跑 precheck、queue，再跑 verify_long、monoaudit、cardchk 三項驗收。"}
+ ]}
+</script>
+<style>
+  :root{
+    --bg:#0b1416; --panel:#122024; --panel2:#0e1a1d; --line:#1f3438;
+    --tx:#e8f2f1; --dim:#8fa6a8; --teal:#14c8be; --gold:#ffd600; --red:#e2564a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--tx);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
+    line-height:1.75;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:900px;margin:0 auto;padding:0 20px 100px}
+  header{padding:56px 0 32px;border-bottom:1px solid var(--line)}
+  h1{font-size:31px;margin:0 0 10px;letter-spacing:-.4px}
+  h1 .ac{color:var(--teal)}
+  .sub{color:var(--dim);font-size:16px;margin:0}
+  .step{margin:42px 0 0}
+  .step-h{display:flex;align-items:baseline;gap:11px;margin-bottom:16px}
+  .num{display:inline-flex;align-items:center;justify-content:center;
+    width:26px;height:26px;border-radius:50%;background:var(--teal);color:#06201f;
+    font-size:14px;font-weight:700;flex:0 0 26px;transform:translateY(3px)}
+  .step-h h2{font-size:19px;margin:0;font-weight:600}
+  .step-h .hint{color:var(--dim);font-size:14px;margin-left:2px}
+  .opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(196px,1fr));gap:11px}
+  .opt{background:var(--panel);border:1px solid var(--line);border-radius:11px;
+    padding:15px 16px;cursor:pointer;transition:.14s;text-align:left;color:inherit;font:inherit}
+  .opt:hover{border-color:#37585d;background:#16272b}
+  .opt.on{border-color:var(--teal);background:#0f2a2b;box-shadow:0 0 0 1px var(--teal) inset}
+  .opt b{display:block;font-size:15px;margin-bottom:3px}
+  .opt span{display:block;color:var(--dim);font-size:13px;line-height:1.55}
+  .opt.on b{color:var(--teal)}
+  #result{margin-top:52px}
+  .hidden{display:none}
+  .verdict{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--teal);
+    border-radius:9px;padding:16px 18px;margin-bottom:34px}
+  .verdict .chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:9px}
+  .chip{background:#193034;border:1px solid #24444a;color:var(--teal);
+    border-radius:20px;padding:2px 11px;font-size:13px}
+  .verdict p{margin:0;font-size:15px;color:var(--dim)}
+  .verdict p b{color:var(--tx)}
+  .rstep{margin-bottom:34px}
+  .rstep h3{font-size:16px;margin:0 0 5px;display:flex;align-items:center;gap:9px}
+  .rstep h3 i{font-style:normal;color:var(--teal);font-size:13px;
+    border:1px solid #24444a;border-radius:5px;padding:1px 7px;background:#132528}
+  .rstep .note{color:var(--dim);font-size:14px;margin:0 0 12px}
+  .dl{display:flex;flex-wrap:wrap;gap:10px}
+  .btn{display:inline-flex;align-items:center;gap:9px;background:var(--teal);color:#06201f;
+    border:0;border-radius:9px;padding:11px 18px;font-size:15px;font-weight:600;
+    cursor:pointer;font-family:inherit;transition:.14s}
+  .btn:hover{filter:brightness(1.12)}
+  .btn.ghost{background:transparent;color:var(--tx);border:1px solid var(--line)}
+  .btn.ghost:hover{border-color:#37585d;background:#16272b}
+  .btn small{font-weight:400;opacity:.72;font-size:12px}
+  pre{background:#081113;border:1px solid var(--line);border-radius:9px;
+    padding:15px 78px 15px 16px;margin:0;font-size:13.5px;line-height:1.72;
+    white-space:pre-wrap;overflow-wrap:anywhere;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#cfe6e3}
+  .cw{position:relative}
+  .cp{position:absolute;top:9px;right:9px;background:#193034;color:var(--dim);
+    border:1px solid #24444a;border-radius:6px;padding:3px 10px;font-size:12px;
+    cursor:pointer;font-family:inherit;transition:.14s}
+  .cp:hover{color:var(--teal);border-color:var(--teal)}
+  .cp.done{color:var(--teal);border-color:var(--teal)}
+  .warn{background:#241a14;border:1px solid #4a3520;border-left:3px solid var(--gold);
+    border-radius:9px;padding:14px 17px;margin:14px 0 0;font-size:14.5px}
+  .warn b{color:var(--gold)}
+  .stop{background:#2a1815;border-color:#4d2721;border-left-color:var(--red)}
+  .stop b{color:var(--red)}
+  table{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0 0}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--dim);font-weight:500;font-size:13px}
+  td code{background:#081113;padding:1px 6px;border-radius:4px;font-size:12.5px;
+    font-family:ui-monospace,Menlo,Consolas,monospace;color:#9fe0da}
+  footer{margin-top:64px;padding-top:26px;border-top:1px solid var(--line);
+    color:var(--dim);font-size:13.5px}
+  footer .dl{margin:14px 0 0}
+  a{color:var(--teal)}
+  .cta{margin-top:56px;background:linear-gradient(180deg,#122a2c,#0f2124);
+    border:1px solid #24444a;border-radius:14px;padding:26px 28px}
+  .cta h3{margin:0 0 8px;font-size:19px;color:var(--tx)}
+  .cta p{margin:0 0 18px;color:var(--dim);font-size:15px;max-width:64ch}
+  .cta .dl{gap:10px}
+  .who{margin-top:34px;display:flex;gap:16px;align-items:flex-start;
+    color:var(--dim);font-size:14px;line-height:1.7}
+  .who .mark{flex:0 0 44px;height:44px;border-radius:11px;background:#132528;
+    border:1px solid #24444a;display:flex;align-items:center;justify-content:center;
+    color:var(--teal);font-weight:700;font-size:17px}
+  .who b{color:var(--tx)}
+  @media(max-width:640px){
+    .wrap{padding:0 15px 70px}
+    header{padding:36px 0 24px}
+    h1{font-size:25px}
+    .opts{grid-template-columns:1fr}
+    pre{font-size:12.5px;padding-right:16px}
+    .cp{position:static;display:block;margin:0 0 8px auto}
+    .cw{display:flex;flex-direction:column}
+    .cta{padding:20px}
+    table{font-size:13px}
+    th,td{padding:8px 6px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>口播影片剪片工作流 <span class="ac">安裝導引</span></h1>
+  <p class="sub">一段長錄影 → 一批帶字幕、動畫、圖卡、BGM 的短影音與長片。<br>
+  回答三個問題，這頁會給你該下載的檔案、該貼的指令，跟該對 AI 說的第一句話。</p>
+</header>
+
+<div class="step">
+  <div class="step-h"><span class="num">1</span><h2>你用哪一個 AI？</h2></div>
+  <div class="opts" id="q1">
+    <button class="opt" data-v="cowork"><b>Claude 桌面版</b><span>Cowork。不用碰終端機，最省事</span></button>
+    <button class="opt" data-v="claudecode"><b>Claude Code</b><span>終端機版，能自己除錯</span></button>
+    <button class="opt" data-v="codex"><b>Codex CLI</b><span>ChatGPT 的終端機版</span></button>
+    <button class="opt" data-v="web"><b>網頁版對話</b><span>ChatGPT / Claude 網頁或手機</span></button>
+  </div>
+</div>
+
+<div class="step hidden" id="s2">
+  <div class="step-h"><span class="num">2</span><h2>你的電腦？</h2></div>
+  <div class="opts" id="q2">
+    <button class="opt" data-v="win"><b>Windows</b><span>PowerShell</span></button>
+    <button class="opt" data-v="mac"><b>macOS</b><span>Terminal ＋ Homebrew</span></button>
+  </div>
+</div>
+
+<div class="step hidden" id="s3">
+  <div class="step-h"><span class="num">3</span><h2>你的錄影是哪一種？</h2>
+    <span class="hint">猜錯的成本是整批重做</span></div>
+  <div class="opts" id="q3">
+    <button class="opt" data-v="m1"><b>雙畫面錄影</b><span>課程、講座、會議側錄。左投影片＋右講師</span></button>
+    <button class="opt" data-v="m2"><b>單機位自錄</b><span>商品開箱、產品介紹、口播、客戶見證</span></button>
+  </div>
+</div>
+
+<div id="result" class="hidden"></div>
+
+<div class="cta">
+  <h3>這套流程是怎麼長出來的</h3>
+  <p>它不是設計出來的，是把一場兩小時的課程錄影剪成三十幾支影片的過程中，
+  一個一個坑踩出來的——字幕為什麼不能讓程式自動斷句、靜音為什麼是 0.80 秒不是 0、
+  動畫為什麼會在第 39 秒全部擠在一起。手冊第 9 章把十個坑跟修法都寫進去了。<br><br>
+  我每週在粉專寫一則 Meta 廣告與內容實戰筆記，投放、素材、數據，一次講清楚。</p>
+  <div class="dl">
+    <a class="btn" href="https://www.facebook.com/ATMarketing.tw/" target="_blank" rel="noopener">追蹤圭話行銷</a>
+    <a class="btn ghost" href="https://atmarketing.tw/" target="_blank" rel="noopener">官網</a>
+    <a class="btn ghost" href="https://atmarketing.kaik.io/@skyman" target="_blank" rel="noopener">線上課程</a>
+  </div>
+</div>
+
+<footer>
+  <div>不管走哪條路線，檔案都在同一包裡；想單獨拿也可以：</div>
+  <div class="dl">
+    <button class="btn ghost" data-dl="pack">完整包 .zip</button>
+    <button class="btn ghost" data-dl="skill">.skill（給 Claude 桌面版）</button>
+    <button class="btn ghost" data-dl="skillmd">SKILL.md</button>
+    <button class="btn ghost" data-dl="agents">AGENTS.md</button>
+    <button class="btn ghost" data-dl="manual">完整手冊 .md</button>
+    <button class="btn ghost" data-dl="ops">操作流程說明 .md</button>
+  </div>
+  <div style="margin-top:14px">要離線使用、或想把整份收藏成一個檔案：<a href="offline.html" download="talking-head-video-cut-setup.html">下載單檔離線版</a>（所有檔案內嵌在裡面，不連任何伺服器）。</div>
+  <div class="who">
+    <div class="mark">圭</div>
+    <div><b>圭話行銷 ATMarketing</b>｜何佳勳（小圭）<br>
+    這套工作流與引擎程式免費提供，可自用與改寫。<br>
+    引擎是 Python ＋ ffmpeg，全部在你自己的電腦上跑，錄影檔不會上傳到任何地方。</div>
+  </div>
+</footer>
+
+</div>
+
+<script>
+const BLOBS = {"pack": {"name": "talking-head-video-cut.zip", "mime": "application/zip", "size": 66325, "url": "files/talking-head-video-cut.zip"}, "skill": {"name": "talking-head-video-cut.skill", "mime": "application/zip", "size": 66325, "url": "files/talking-head-video-cut.skill"}, "skillmd": {"name": "SKILL.md", "mime": "text/markdown", "size": 13034, "url": "files/SKILL.md"}, "agents": {"name": "AGENTS.md", "mime": "text/markdown", "size": 3998, "url": "files/AGENTS.md"}, "manual": {"name": "talking-head-video-cut-handbook.md", "mime": "text/markdown", "size": 41129, "url": "files/talking-head-video-cut-handbook.md"}, "ops": {"name": "talking-head-video-cut-setup-guide.md", "mime": "text/markdown", "size": 9297, "url": "files/talking-head-video-cut-setup-guide.md"}};
+
+/* ---------- 下載 ----------
+   兩種模式：b64 = 檔案內嵌在這一頁（離線版）；url = 指向同目錄的實體檔（網站版） */
+function download(key){
+  const b = BLOBS[key];
+  const a = document.createElement('a');
+  a.download = b.name;
+  if (b.b64){
+    const bin = atob(b.b64);
+    const arr = new Uint8Array(bin.length);
+    for (let i=0;i<bin.length;i++) arr[i] = bin.charCodeAt(i);
+    a.href = URL.createObjectURL(new Blob([arr], {type:b.mime}));
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+  } else {
+    a.href = b.url;
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+}
+function kb(n){ return (n/1024).toFixed(0) + ' KB'; }
+
+/* ---------- 狀態 ---------- */
+const S = {tool:null, os:null, mode:null};
+
+const TOOL = {
+  cowork:     {name:'Claude 桌面版 Cowork', run:true},
+  claudecode: {name:'Claude Code',          run:true},
+  codex:      {name:'Codex CLI',            run:true},
+  web:        {name:'網頁版對話',            run:false}
+};
+const OSN  = {win:'Windows', mac:'macOS'};
+const MODE = {m1:'模式一 雙畫面錄影', m2:'模式二 單機位自錄'};
+
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+let cpSeq = 0;
+const CP = {};
+function code(text){
+  const id = 'cp' + (++cpSeq);
+  CP[id] = text;
+  return '<div class="cw"><button class="cp" data-cp="'+id+'">複製</button><pre>'+esc(text)+'</pre></div>';
+}
+
+/* ---------- 各段內容 ---------- */
+function envCmd(){
+  if (S.os === 'mac') return [
+    'brew install python ffmpeg',
+    'pip3 install faster-whisper opencc-python-reimplemented pillow numpy',
+    '',
+    '# 這一行一定要有輸出，沒有就是 ffmpeg 沒帶 libass，字幕會燒不上去',
+    'ffmpeg -filters | grep subtitles'
+  ].join('\n');
+  return [
+    '# Python 3.10+ 從官網安裝，安裝時務必勾選 Add to PATH',
+    '# ffmpeg 用 Gyan 的 full build，解壓後把 bin 資料夾加進 PATH',
+    '',
+    'pip install faster-whisper opencc-python-reimplemented pillow numpy',
+    '',
+    '# 這一行一定要有輸出，沒有就是 ffmpeg 沒帶 libass，字幕會燒不上去',
+    'ffmpeg -filters | findstr subtitles'
+  ].join('\n');
+}
+
+/* 引擎解壓到專案：三條本機路線都一樣 */
+function engineCmd(){
+  return S.os === 'mac'
+    ? 'PROJ=~/videoedit/myproject          # 改成你的專案資料夾\n' +
+      'mkdir -p "$PROJ/engine"\n' +
+      'unzip -o ~/Downloads/talking-head-video-cut.zip -d "$PROJ/engine"\n\n' +
+      '# 確認：要印出路徑，不能是 No such file\n' +
+      'ls "$PROJ/engine/scripts/paths.py"'
+    : '$proj = "C:\\videoedit\\myproject"     # 改成你的專案資料夾\n' +
+      'New-Item -ItemType Directory -Force -Path "$proj\\engine" | Out-Null\n' +
+      'Expand-Archive -Path "$env:USERPROFILE\\Downloads\\talking-head-video-cut.zip" -DestinationPath "$proj\\engine" -Force\n\n' +
+      '# 確認：要印出 True\n' +
+      'Test-Path "$proj\\engine\\scripts\\paths.py"';
+}
+
+/* 註冊成 skill：讓 AI 不用每次被提醒就會自己載入 */
+function skillCmd(){
+  const dir = S.tool === 'codex' ? '.agents' : '.claude';
+  if (S.tool === 'cowork') return null;
+  return S.os === 'mac'
+    ? 'mkdir -p ~/' + dir + '/skills/talking-head-video-cut\n' +
+      'unzip -o ~/Downloads/talking-head-video-cut.zip -d ~/' + dir + '/skills/talking-head-video-cut\n\n' +
+      '# 確認：要印出路徑\n' +
+      'ls ~/' + dir + '/skills/talking-head-video-cut/SKILL.md'
+    : '$dst = "$env:USERPROFILE\\' + dir + '\\skills\\talking-head-video-cut"\n' +
+      'New-Item -ItemType Directory -Force -Path $dst | Out-Null\n' +
+      'Expand-Archive -Path "$env:USERPROFILE\\Downloads\\talking-head-video-cut.zip" -DestinationPath $dst -Force\n\n' +
+      '# 確認：要印出 True\n' +
+      'Test-Path "$dst\\SKILL.md"';
+}
+
+function agentsCmd(){
+  return S.os === 'mac'
+    ? 'cp "$PROJ/engine/AGENTS.md" "$PROJ/AGENTS.md"'
+    : 'Copy-Item "$proj\\engine\\AGENTS.md" "$proj\\AGENTS.md"';
+}
+
+function verifyCmd(){
+  return S.os === 'mac'
+    ? 'cd ~/videoedit/myproject/engine/scripts     # 改成你的專案資料夾\n' +
+      'python3 -c "import paths, trim, long_run, precheck; print(\'OK\', paths.PROJECT)"'
+    : 'cd "C:\\videoedit\\myproject\\engine\\scripts"   # 改成你的專案資料夾\n' +
+      'python -c "import paths, trim, long_run, precheck; print(\'OK\', paths.PROJECT)"';
+}
+
+function pathsSnippet(){
+  const win = S.os !== 'mac';
+  const P = win ? 'r"C:\\videoedit\\myproject"' : '"/Users/你的帳號/videoedit/myproject"';
+  const F = win ? 'r"C:\\videoedit\\_fonts"'    : '"/Users/你的帳號/videoedit/_fonts"';
+  const B = win ? 'r"C:\\videoedit\\_bgm\\bed_A.wav"' : '"/Users/你的帳號/videoedit/_bgm/bed_A.wav"';
+  const src = S.mode === 'm2' ? 'product_01.mp4' : 'recording_01.mp4';
+  let geo;
+  if (S.mode === 'm2'){
+    geo = '# 5) 畫面幾何 —— 模式二不用量任何東西\n' +
+          'SEPARATOR_X = 0\n' +
+          'CAM   = "null"      # ffmpeg 的 null filter＝原封不動通過\n' +
+          'SLIDE = "null"\n' +
+          '#    設定檔裡記得寫 LAYOUTS = ["F", "P"]';
+  } else {
+    geo = '# 5) 畫面幾何 —— 模式一要量。請 AI 幫你量（手冊第 3 章②），不要用猜的\n' +
+          'SEPARATOR_X = 1440\n' +
+          'CAM   = "crop=472:267:1448:406"     # 講師鏡頭\n' +
+          'SLIDE = "crop=1440:900:0:90"        # 投影片區\n' +
+          '#    設定檔裡用 LAYOUTS = ["A", "B"]（畫面有客戶資料時改 ["C"]）';
+  }
+  return 'import os\n\n' +
+    '# 1) 專案資料夾\nPROJECT  = ' + P + '\n\n' +
+    '# 2) 字型（要有 Bold 與 Heavy 兩個字重）\n' +
+    'FONT_DIR = ' + F + '\n' +
+    'FONT_B   = os.path.join(FONT_DIR, "GenSenRounded2TW-B.otf")\n' +
+    'FONT_H   = os.path.join(FONT_DIR, "GenSenRounded2TW-H.otf")\n' +
+    '# 注意：這裡要填「字型完整名稱」，不是家族名稱\n' +
+    'FONT_ASS = "GenSenRounded2 TW B"\n\n' +
+    '# 3) 背景音樂\nBGM = ' + B + '\n\n' +
+    '# 4) 來源錄影，自己取短代號\n' +
+    'SRC = {\n    "a1": os.path.join(PROJECT, "' + src + '"),\n}\n\n' + geo;
+}
+
+function firstPrompt(){
+  const modeTxt = S.mode === 'm2'
+    ? '我的錄影是模式二：單機位自錄的商品／產品介紹片。\n請一定要讀手冊第 12 章（選段模板與廣告用語避雷），不要只讀前十一章。'
+    : '我的錄影是模式一：雙畫面的課程／講座錄影（左投影片＋右講師）。';
+  const runTxt = TOOL[S.tool].run
+    ? '請先跑 ingest.py 把錄影轉成逐字稿，然後照手冊第 3 章③做內容盤點，\n輸出 A/B/C 分級表與避雷清單。\n\n先不要動手剪，讓我看過盤點結果再決定。'
+    : '你不能在這裡執行本機指令，所以只做到設定檔為止：\n我會貼逐字稿給你，你負責盤點、選段、逐句手寫字幕、產出設定檔內容，\n我自己複製到電腦上跑。不要假裝在算圖。';
+  return '我要把 <你的資料夾> 裡的錄影剪成短影音。\n\n' +
+    '請先照 SKILL.md 的〈開場：先做環境判別〉把四題答完，結果先講給我聽：\n' +
+    '你能不能執行指令、我的作業系統、我用的工具、我的錄影是哪一種模式。\n\n' +
+    modeTxt + '\n\n' + runTxt + '\n\n' +
+    '規則（照手冊，不要自己發明）：\n' +
+    '1. 剪輯參數一律照手冊：靜音門檻、留白、字幕長度、動畫節奏。\n' +
+    '2. 字幕分句你逐句手寫，不要用程式自動斷句。\n' +
+    '3. 算圖前一定先跑 precheck.py，NG 就停下來修，不要硬跑。\n' +
+    '4. 交付前跑 verify_long.py、monoaudit.py、cardchk.py 三個檢查。\n' +
+    '5. 內容安全清單逐條檢查，有疑慮先問我，不要自己放行。\n' +
+    '6. 不准補任何我沒講過的數字或功效。';
+}
+
+function warnings(){
+  let w = '';
+  if (S.tool === 'cowork'){
+    w += '<div class="warn"><b>Cowork 不讀你電腦上的 <code>~/.claude/skills/</code>。</b>' +
+         '它載入的是你 claude.ai 帳號上啟用的 skill。所以要從桌面版側邊欄的 Customize 加入，' +
+         '或把 .skill 檔直接交給 Claude。<br>如果你同時也用 Claude Code，兩邊要各裝一次。</div>';
+  }
+  if (S.tool === 'claudecode'){
+    w += '<div class="warn"><b>路徑最容易打錯的兩個地方：</b>' +
+         '資料夾是 <code>skills</code> 不是 <code>skill</code>；' +
+         '而且 <code>SKILL.md</code> 必須在 <code>talking-head-video-cut/</code> 這一層底下，' +
+         '不能直接丟在 <code>skills/</code> 裡。</div>';
+  }
+  if (S.tool === 'codex'){
+    w += '<div class="warn"><b>不要把手冊的內容貼進 <code>AGENTS.md</code>。</b>' +
+         'Codex 的 <code>AGENTS.md</code> 合計有大小上限（預設約 32 KiB），' +
+         '手冊本身就 40 KB 以上，貼進去會吃光額度、擠掉你其他的專案指示。<br>' +
+         '正確做法：<code>AGENTS.md</code> 只放本包附的那份簡短摘要（約 3 KB），' +
+         '手冊當一般檔案放在專案裡，Codex 需要時會自己去讀。</div>';
+    w += '<div class="warn"><b>Codex 找的是 <code>.agents/skills/</code>，不是 <code>.claude/skills/</code>。</b>' +
+         '放錯資料夾它不會報錯，只會當作沒這個 skill。</div>';
+  }
+  if (S.tool === 'web'){
+    w += '<div class="warn stop"><b>這條路線做不出 mp4。</b>' +
+         '網頁版不能執行本機 ffmpeg，也不該上傳 1.5–4 GB 的錄影（裡面有客戶資料與後台畫面）。<br>' +
+         '它能做的是「想」的部分：內容盤點、選段、逐句寫字幕、產出設定檔內容。' +
+         '算圖那一步一定要在你自己的電腦上跑。</div>';
+    w += '<div class="warn"><b>如果 AI 說它「正在算圖」或回報渲染進度，那是幻覺。</b>' +
+         '直接問它「你現在能執行 ffmpeg 嗎」，然後回到能執行指令的環境。</div>';
+  }
+  if (S.mode === 'm2'){
+    w += '<div class="warn"><b>商品片最容易出事的不是隱私，是講過頭。</b>' +
+         '療效用語（治療、消炎、瘦身）、最高級用語（第一、最有效、100%）、' +
+         '沒有出處的數字、業配沒揭露——這四項在手冊第 12-6 節有完整清單，每一支都要過一次。<br>' +
+         '那是實務避雷清單，不是法律意見；食品、化粧品、醫療器材的宣稱請自行確認或找專業人士看過。</div>';
+  } else {
+    w += '<div class="warn"><b>課程錄影是講給學員聽的，不是講給陌生人聽的。</b>' +
+         '真實客戶名、後台數據、學員姓名、自家報價、過期資訊都要過一次手冊第 8 章的清單。<br>' +
+         '最容易漏的是<b>立場衝突</b>：內容講給 A 群人聽、但你要招的是 B 群人時，' +
+         '段落再精采也不能用——那是要重新選段，不是重新配字幕。</div>';
+  }
+  return w;
+}
+
+/* ---------- 組裝結果 ---------- */
+function render(){
+  if (!S.tool) return;
+  if (S.tool !== 'web' && !S.os) return;
+  if (!S.mode) return;
+
+  const t = TOOL[S.tool];
+  let h = '';
+
+  h += '<div class="verdict"><div class="chips">' +
+       '<span class="chip">' + t.name + '</span>' +
+       (S.tool === 'web' ? '' : '<span class="chip">' + OSN[S.os] + '</span>') +
+       '<span class="chip">' + MODE[S.mode] + '</span></div>' +
+       '<p>' + (t.run
+         ? '這條路線<b>可以跑完整套</b>：轉逐字稿、算圖、驗收全部在你自己的電腦上跑，錄影檔不會離開你的硬碟。'
+         : '這條路線<b>只能做到設定檔為止</b>。算圖要另外在你自己的電腦上跑。')
+       + '</p></div>';
+
+  let n = 0;
+
+  /* 下載 */
+  n++;
+  h += '<div class="rstep"><h3><i>' + n + '</i>下載</h3>';
+  if (S.tool === 'cowork'){
+    h += '<p class="note">兩個都要：<b>.skill</b> 給 Claude 記住規則，<b>完整包</b>' +
+         '解壓到專案裡提供引擎程式。內容其實一樣，只是副檔名不同。</p><div class="dl">' +
+         '<button class="btn" data-dl="skill">下載 .skill <small>' + kb(BLOBS.skill.size) + '</small></button>' +
+         '<button class="btn" data-dl="pack">下載完整包 <small>' + kb(BLOBS.pack.size) + '</small></button>' +
+         '<button class="btn ghost" data-dl="ops">操作流程說明</button></div>';
+  } else if (S.tool === 'web'){
+    h += '<p class="note">把這兩個檔案當附件上傳給 AI，或整份貼進對話。</p><div class="dl">' +
+         '<button class="btn" data-dl="skillmd">SKILL.md <small>' + kb(BLOBS.skillmd.size) + '</small></button>' +
+         '<button class="btn" data-dl="manual">完整手冊 <small>' + kb(BLOBS.manual.size) + '</small></button>' +
+         '<button class="btn ghost" data-dl="pack">完整包（含引擎程式）</button></div>';
+  } else {
+    h += '<p class="note">整包一個 zip，裡面有 SKILL.md、完整手冊、AGENTS.md、跟引擎程式。</p><div class="dl">' +
+         '<button class="btn" data-dl="pack">下載完整包 <small>' + kb(BLOBS.pack.size) + '</small></button>' +
+         '<button class="btn ghost" data-dl="ops">操作流程說明</button></div>';
+  }
+  h += '</div>';
+
+  /* 裝環境 */
+  if (t.run){
+    n++;
+    h += '<div class="rstep"><h3><i>' + n + '</i>裝環境</h3>' +
+         '<p class="note">一次性。' + (S.os === 'mac' ? 'Terminal' : 'PowerShell') + ' 貼進去執行。</p>' +
+         code(envCmd()) +
+         '<div class="warn"><b>最後那一行沒有輸出就先停。</b>' +
+         '代表你的 ffmpeg 沒帶 libass，字幕燒不上去，後面全部白做。' +
+         (S.os === 'mac' ? ' 用 <code>brew reinstall ffmpeg</code> 重裝。' : ' 換 Gyan 的 full build。') +
+         '</div></div>';
+  }
+
+  /* 放檔案 */
+  n++;
+  h += '<div class="rstep"><h3><i>' + n + '</i>放到對的地方</h3>';
+  if (t.run){
+    h += '<p class="note"><b>A. 引擎放進專案</b>——真正在跑 ffmpeg 的程式，' +
+         '要跟你的錄影檔放在同一台機器上。假設 zip 下載在「下載」資料夾。</p>' +
+         code(engineCmd());
+    if (S.tool === 'cowork'){
+      h += '<p class="note" style="margin-top:18px"><b>B. 註冊 skill</b>——' +
+           'Claude 桌面版不用指令，二選一：</p>' +
+           '<table><tr><th>做法</th><th>怎麼做</th></tr>' +
+           '<tr><td>直接給 Claude</td><td>把 .skill 檔拖進對話，它會問你要不要存起來</td></tr>' +
+           '<tr><td>從設定加入</td><td>桌面版側邊欄 → <b>Customize</b> → 加入 skill</td></tr></table>';
+    } else {
+      h += '<p class="note" style="margin-top:18px"><b>B. 註冊 skill</b>——' +
+           '讓 ' + t.name + ' 不用每次被提醒就會自己載入規則。</p>' +
+           code(skillCmd());
+    }
+    if (S.tool === 'codex'){
+      h += '<p class="note" style="margin-top:18px"><b>C. <code>AGENTS.md</code> 放專案根目錄</b>' +
+           '——Codex 每次都會讀它。</p>' + code(agentsCmd());
+    }
+    h += '<div class="warn"><b>B 步驟其實可以跳過。</b>' +
+         '不註冊 skill 也能用，只是每次要自己跟 AI 說一句「請先讀 engine/SKILL.md 和 ' +
+         'engine/references/手冊.md」。一次性的專案這樣就夠了；要長期重複用才值得裝。</div>';
+  } else {
+    h += '<p class="note">沒有安裝步驟。開新對話，把 SKILL.md 與手冊當附件上傳，' +
+         '或把兩份內容整份貼進去。</p>';
+  }
+  h += '</div>';
+
+  /* paths.py */
+  if (t.run){
+    n++;
+    h += '<div class="rstep"><h3><i>' + n + '</i>填 <code>scripts/paths.py</code></h3>' +
+         '<p class="note">整套引擎只有這一個檔案要改。改完就能搬到任何一台電腦。</p>' +
+         code(pathsSnippet());
+    if (S.mode === 'm1'){
+      h += '<div class="warn"><b>畫面幾何每一場都要重量一次。</b>' +
+           '上面那組數字是範例，不是通用值。叫 AI 幫你量（手冊第 3 章②），花 30 秒，不要用猜的。</div>';
+    }
+    h += '<p class="note" style="margin-top:14px">填完驗證一下，看到 <code>OK</code> ' +
+         '加上你的路徑就算過了：</p>' + code(verifyCmd()) + '</div>';
+  }
+
+  /* prompt */
+  n++;
+  h += '<div class="rstep"><h3><i>' + n + '</i>對 AI 說這句</h3>' +
+       '<p class="note">重點是最後那句「先不要動手剪」。直接叫 AI 開剪，' +
+       '你會拿到一批技術上沒問題但你不想發的影片。</p>' +
+       code(firstPrompt()) + '</div>';
+
+  /* 出片 */
+  if (t.run){
+    n++;
+    h += '<div class="rstep"><h3><i>' + n + '</i>算圖與驗收</h3>' +
+         '<p class="note">盤點通過後，AI 會自己跑這些。你只要看它回報。</p>' +
+         code('python precheck.py p3 p5        # 先健檢，NG 就停\n' +
+              'python queue.py   p3 p5        # 再算圖\n\n' +
+              'python verify_long.py p3 p5    # 尺寸、時長、音畫 drift、長靜音\n' +
+              'python monoaudit.py            # 段落順序有沒有往回跳\n' +
+              'python cardchk.py              # 片頭圖卡文字有沒有溢框') +
+         '<table style="margin-top:14px"><tr><th>通過標準</th><th></th></tr>' +
+         '<tr><td>尺寸</td><td><code>1080×1920</code> / <code>1920×1080</code></td></tr>' +
+         '<tr><td>音畫 drift</td><td>≤ 0.05 秒</td></tr>' +
+         '<tr><td>內容段長靜音</td><td>0</td></tr>' +
+         '<tr><td>片頭圖卡最右白字</td><td>≤ 畫面寬 − 60px</td></tr></table>' +
+         '<div class="warn"><b>看到 precheck NG 不要叫 AI「先跑跑看」。</b>' +
+         '一支 2.5 分鐘的長片要算 5–9 分鐘，錯了就是白燒。</div></div>';
+  }
+
+  /* 注意事項 */
+  h += '<div class="rstep"><h3><i>!</i>這條路線要注意的</h3>' + warnings() + '</div>';
+
+  const box = document.getElementById('result');
+  box.innerHTML = h;
+  box.classList.remove('hidden');
+}
+
+/* ---------- 事件 ---------- */
+function pick(group, val){
+  document.querySelectorAll('#' + group + ' .opt').forEach(b =>
+    b.classList.toggle('on', b.dataset.v === val));
+}
+document.getElementById('q1').addEventListener('click', e => {
+  const b = e.target.closest('.opt'); if (!b) return;
+  S.tool = b.dataset.v; pick('q1', S.tool);
+  const web = S.tool === 'web';
+  document.getElementById('s2').classList.toggle('hidden', web);
+  if (web) S.os = null;
+  document.getElementById('s3').classList.remove('hidden');
+  document.getElementById('result').classList.add('hidden');
+  render();
+});
+document.getElementById('q2').addEventListener('click', e => {
+  const b = e.target.closest('.opt'); if (!b) return;
+  S.os = b.dataset.v; pick('q2', S.os); render();
+});
+document.getElementById('q3').addEventListener('click', e => {
+  const b = e.target.closest('.opt'); if (!b) return;
+  S.mode = b.dataset.v; pick('q3', S.mode); render();
+});
+document.addEventListener('click', e => {
+  const d = e.target.closest('[data-dl]');
+  if (d){ download(d.dataset.dl); return; }
+  const c = e.target.closest('.cp');
+  if (c){
+    const txt = CP[c.dataset.cp];
+    navigator.clipboard.writeText(txt).then(()=>{
+      c.textContent = '已複製'; c.classList.add('done');
+      setTimeout(()=>{ c.textContent='複製'; c.classList.remove('done'); }, 1600);
+    }).catch(()=>{ c.textContent = '請手動選取'; });
+  }
+});
+</script>
+</body>
+</html>

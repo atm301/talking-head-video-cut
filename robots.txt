@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://atm301.github.io/talking-head-video-cut/sitemap.xml
